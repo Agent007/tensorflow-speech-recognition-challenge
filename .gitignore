@@ -1,0 +1,5 @@
+.kaggle-cli
+.ipynb_checkpoints
+data/download
+data/train
+data/test
