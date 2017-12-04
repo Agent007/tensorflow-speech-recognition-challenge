@@ -4,6 +4,8 @@ source activate
 #TRAINING_SIZE=64073  # math.floor(64721 * .99)
 BATCH_SIZE=512
 EVAL_STEP_INTERVAL=128  # approximately TRAINING_SIZE / BATCH_SIZE
-python ~/tensorflow/tensorflow/examples/speech_commands/train.py --data_url '' --data_dir data/train/audio --background_volume 0.5 --testing_percentage 0 --validation_percentage 1 --how_many_training_steps 15000,3000 --learning_rate 0.001,0.0001 --batch_size ${BATCH_SIZE} --summaries_dir data/retrain_logs --train_dir data/speech_commands_train
+python train.py --data_url '' --data_dir data/train/audio --background_volume 0.5 --unknown_percentage 25.0 --testing_percentage 0 --validation_percentage 1 --how_many_training_steps 1200,400,400 --learning_rate 0.001,0.0003,0.00001 --batch_size ${BATCH_SIZE} --summaries_dir data/retrain_logs --train_dir data/speech_commands_train --model_architecture kaggle
 
-python ~/tensorflow/tensorflow/examples/speech_commands/train.py --data_url '' --data_dir data/train/audio --background_volume 0.5 --testing_percentage 0 --validation_percentage 1 --how_many_training_steps 21000 --learning_rate 0.0001 --batch_size ${BATCH_SIZE} --summaries_dir data/retrain_logs --train_dir data/speech_commands_train --start_checkpoint data/speech_commands_train/conv.ckpt-18000
+python train.py --data_url '' --data_dir data/train/audio --background_volume 0.5 --unknown_percentage 25.0 --testing_percentage 0 --validation_percentage 1 --how_many_training_steps 2400 --learning_rate 0.00001 --batch_size ${BATCH_SIZE} --summaries_dir data/retrain_logs --train_dir data/speech_commands_train --start_checkpoint data/speech_commands_train/kaggle.ckpt-2000 --model_architecture kaggle
+
+python train.py --data_url '' --data_dir data/train/audio --background_volume 0.5 --unknown_percentage 25.0 --testing_percentage 0 --validation_percentage 1 --how_many_training_steps 2800 --learning_rate 0.000001 --batch_size ${BATCH_SIZE} --summaries_dir data/retrain_logs --train_dir data/speech_commands_train --start_checkpoint data/speech_commands_train/kaggle.ckpt-2400 --model_architecture kaggle

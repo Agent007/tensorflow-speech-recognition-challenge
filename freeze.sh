@@ -1,4 +1,4 @@
 #!/bin/bash -e
 
 source activate
-python ~/tensorflow/tensorflow/examples/speech_commands/freeze.py --start_checkpoint=data/speech_commands_train/conv.ckpt-20400 --output_file=frozen_graph.pb
+python freeze.py --start_checkpoint=data/speech_commands_train/kaggle.ckpt-2000 --model_architecture kaggle --output_file=frozen_graph.pb

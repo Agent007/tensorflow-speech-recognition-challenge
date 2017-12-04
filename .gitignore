@@ -3,3 +3,5 @@
 data/download
 data/train
 data/test
+__pycache__
+
