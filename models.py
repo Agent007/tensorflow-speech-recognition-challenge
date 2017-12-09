@@ -176,18 +176,22 @@ def create_kaggle_model(fingerprint_input, model_settings, is_training):
     dropout_prob = tf.placeholder(tf.float32, name='dropout_prob')
   input_frequency_size = model_settings['dct_coefficient_count']
   input_time_size = model_settings['spectrogram_length']
-  fingerprint_4d = tf.reshape(fingerprint_input,
-                              [-1, input_time_size, input_frequency_size, 1])
-  
-  x = Conv2D(filters=64, kernel_size=[5, 20], strides=[2, 8], padding='same', activation='relu', input_shape=(input_time_size, input_frequency_size, 1))(fingerprint_4d)
+  input_shape = [input_time_size, input_frequency_size, 1]
+  fingerprint_4d = tf.reshape(fingerprint_input, [-1] + input_shape)
+  conv_filters = 32
+  x = Conv2D(filters=conv_filters, 
+             kernel_size=[5, 20], 
+             strides=[2, 8], 
+             padding='same', 
+             activation='relu', 
+             input_shape=input_shape)(fingerprint_4d)
   #print(x.get_shape().as_list()) # [None, 49, 5, 64]
   #x = tf.reshape(x, [-1, 49, 320]) # 5 * 64 == 320
-  x = Reshape((245, 64))(x)
-  x = Bidirectional(GRU(128, activation='relu', unroll=True))(x)
-  #x = Bidirectional(GRU(128, activation='relu', unroll=True))(x)
+  x = Reshape((49, 160))(x)
+  x = Bidirectional(GRU(128, return_sequences=True, unroll=True))(x)
+  x = Bidirectional(GRU(128, return_sequences=True, unroll=True))(x)
 
-  #x = Conv2D(filters=128, kernel_size=[10, 40], padding='same', dilation_rate=1, activation='relu')(x)
-  #x = Conv2D(filters=256, kernel_size=[20, 80], padding='same', dilation_rate=2, activation='relu')(x)
+  #x = Conv2D(filters=256, kernel_size=[5, 20], padding='same', dilation_rate=2, activation='relu')(x)
     
   x = Flatten()(x)
   
