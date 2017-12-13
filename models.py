@@ -22,7 +22,7 @@ from __future__ import print_function
 import math
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import Bidirectional, Conv2D, Dense, Flatten, GRU, MaxPooling2D, Reshape, TimeDistributed
+from tensorflow.python.keras.layers import Add, AveragePooling2D, Conv2D, Dense, Flatten
 
 
 def prepare_model_settings(label_count, sample_rate, clip_duration_ms,
@@ -178,25 +178,35 @@ def create_kaggle_model(fingerprint_input, model_settings, is_training):
   input_time_size = model_settings['spectrogram_length']
   input_shape = [input_time_size, input_frequency_size, 1]
   fingerprint_4d = tf.reshape(fingerprint_input, [-1] + input_shape)
-  conv_filters = 32
+  conv_filters = 45
   x = Conv2D(filters=conv_filters, 
-             kernel_size=[5, 20], 
-             strides=[2, 8], 
+             kernel_size=3, 
              padding='same', 
              activation='relu', 
+             use_bias=False,
              input_shape=input_shape)(fingerprint_4d)
-  #print(x.get_shape().as_list()) # [None, 49, 5, 64]
-  #x = tf.reshape(x, [-1, 49, 320]) # 5 * 64 == 320
-  x = Reshape((49, 160))(x)
-  x = Bidirectional(GRU(128, return_sequences=True, unroll=True))(x)
-  x = Bidirectional(GRU(128, return_sequences=True, unroll=True))(x)
-
-  #x = Conv2D(filters=256, kernel_size=[5, 20], padding='same', dilation_rate=2, activation='relu')(x)
-    
+  
+  def res_block(x, conv_filters, dilation):
+    x_input = x
+    for i in range(2):
+        x = Conv2D(filters=conv_filters,
+                   kernel_size=3,
+                   padding='same',
+                   dilation_rate=dilation,
+                   activation='relu',
+                   use_bias=False)(x)
+        x = tf.layers.BatchNormalization(momentum=0.1, epsilon=1e-5, fused=True, trainable=True)(x)  # match PyTorch defaults
+    x = Add()([x_input, x])
+    return x
+  
+  for residual_blocks in range(6):
+    x = res_block(x, conv_filters, int(2**(residual_blocks // 3)))
+  
+  x = Conv2D(filters=conv_filters, kernel_size=3, padding='same', dilation_rate=16, activation='relu', use_bias=False)(x)
+  x = tf.layers.BatchNormalization(momentum=0.1, epsilon=1e-5, fused=True, trainable=True)(x)
+  
   x = Flatten()(x)
   
-  x = Dense(128, activation='relu')(x)
-
   label_count = model_settings['label_count']
   final_fc = Dense(label_count)(x)
   
