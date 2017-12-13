@@ -22,7 +22,7 @@ from __future__ import print_function
 import math
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import Add, AveragePooling2D, Conv2D, Dense, Flatten
+from tensorflow.python.keras.layers import Activation, Add, AveragePooling2D, Conv2D, Dense, Flatten
 
 
 def prepare_model_settings(label_count, sample_rate, clip_duration_ms,
@@ -182,28 +182,39 @@ def create_kaggle_model(fingerprint_input, model_settings, is_training):
   x = Conv2D(filters=conv_filters, 
              kernel_size=3, 
              padding='same', 
-             activation='relu', 
              use_bias=False,
              input_shape=input_shape)(fingerprint_4d)
+  x = tf.layers.BatchNormalization(scale=False)(x)
+  x = Activation('relu')(x)
   
   def res_block(x, conv_filters, dilation):
-    x_input = x
-    for i in range(2):
-        x = Conv2D(filters=conv_filters,
-                   kernel_size=3,
-                   padding='same',
-                   dilation_rate=dilation,
-                   activation='relu',
-                   use_bias=False)(x)
-        x = tf.layers.BatchNormalization(momentum=0.1, epsilon=1e-5, fused=True, trainable=True)(x)  # match PyTorch defaults
-    x = Add()([x_input, x])
+    shortcut = x
+    
+    x = Conv2D(filters=conv_filters,
+               kernel_size=3,
+               padding='same',
+               dilation_rate=dilation,
+               use_bias=False)(x)
+    x = tf.layers.BatchNormalization(scale=False)(x)
+    x = Activation('relu')(x)
+    
+    x = Conv2D(filters=conv_filters,
+               kernel_size=3,
+               padding='same',
+               dilation_rate=dilation,
+               use_bias=False)(x)
+    x = tf.layers.BatchNormalization(scale=False)(x)
+    
+    x = Add()([shortcut, x])
+    x = Activation('relu')(x)
     return x
   
   for residual_blocks in range(6):
     x = res_block(x, conv_filters, int(2**(residual_blocks // 3)))
   
-  x = Conv2D(filters=conv_filters, kernel_size=3, padding='same', dilation_rate=16, activation='relu', use_bias=False)(x)
-  x = tf.layers.BatchNormalization(momentum=0.1, epsilon=1e-5, fused=True, trainable=True)(x)
+  x = Conv2D(filters=conv_filters, kernel_size=3, padding='same', dilation_rate=16, use_bias=False)(x)
+  x = tf.layers.BatchNormalization(scale=False)(x)
+  x = Activation('relu')(x)
   
   x = Flatten()(x)
   
