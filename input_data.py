@@ -148,6 +148,21 @@ def save_wav_file(filename, wav_data, sample_rate):
         })
 
 
+def log_mel_spectrogram(spectrogram):
+    """
+    https://www.tensorflow.org/api_docs/python/tf/contrib/signal/mfccs_from_log_mel_spectrograms
+    """
+    num_spectrogram_bins = spectrogram.shape[-1].value
+    num_mel_bins, sample_rate, lower_edge_hertz, upper_edge_hertz = 80, 16000.0, 80.0, 7600.0
+    linear_to_mel_weight_matrix = tf.contrib.signal.linear_to_mel_weight_matrix(
+        num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz)
+    mel_spectrogram = tf.tensordot(spectrogram, linear_to_mel_weight_matrix, 1)
+    mel_spectrogram.set_shape(spectrogram.shape[:-1].concatenate(linear_to_mel_weight_matrix.shape[-1:]))
+
+    log_mel_spectrogram = tf.log(mel_spectrogram + 1e-6)
+    return log_mel_spectrogram
+
+
 class AudioProcessor(object):
   """Handles loading, partitioning, and preparing audio training data."""
 
@@ -379,6 +394,7 @@ class AudioProcessor(object):
         window_size=model_settings['window_size_samples'],
         stride=model_settings['window_stride_samples'],
         magnitude_squared=True)
+    self.log_mel_spectrogram = log_mel_spectrogram(spectrogram)
     self.mfcc_ = contrib_audio.mfcc(
         spectrogram,
         wav_decoder.sample_rate,
@@ -427,7 +443,8 @@ class AudioProcessor(object):
     else:
       sample_count = max(0, min(how_many, len(candidates) - offset))
     # Data and labels will be populated and returned.
-    data = np.zeros((sample_count, model_settings['fingerprint_size']))
+    input_size = model_settings['spectrogram_length'] * 80  # number of mel bins
+    data = np.zeros((sample_count, input_size))
     labels = np.zeros((sample_count, model_settings['label_count']))
     desired_samples = model_settings['desired_samples']
     use_background = self.background_data and (mode == 'training')
@@ -481,7 +498,7 @@ class AudioProcessor(object):
       else:
         input_dict[self.foreground_volume_placeholder_] = 1
       # Run the graph to produce the output audio.
-      data[i - offset, :] = sess.run(self.mfcc_, feed_dict=input_dict).flatten()
+      data[i - offset, :] = sess.run(self.log_mel_spectrogram, feed_dict=input_dict).flatten()
       label_index = self.word_to_index[sample['label']]
       labels[i - offset, label_index] = 1
     return data, labels

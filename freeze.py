@@ -88,16 +88,17 @@ def create_inference_graph(wanted_words, sample_rate, clip_duration_ms,
       window_size=model_settings['window_size_samples'],
       stride=model_settings['window_stride_samples'],
       magnitude_squared=True)
-  fingerprint_input = contrib_audio.mfcc(
-      spectrogram,
-      decoded_sample_data.sample_rate,
-      dct_coefficient_count=dct_coefficient_count)
-  fingerprint_frequency_size = model_settings['dct_coefficient_count']
+  #fingerprint_input = contrib_audio.mfcc(
+  #    spectrogram,
+  #    decoded_sample_data.sample_rate,
+  #    dct_coefficient_count=dct_coefficient_count)
+  #fingerprint_frequency_size = model_settings['dct_coefficient_count']
+  mel_bins = 80
   fingerprint_time_size = model_settings['spectrogram_length']
-  reshaped_input = tf.reshape(fingerprint_input, [
-      -1, fingerprint_time_size * fingerprint_frequency_size
+  log_mel_spectrogram = input_data.log_mel_spectrogram(spectrogram)
+  reshaped_input = tf.reshape(log_mel_spectrogram, [
+      -1, fingerprint_time_size * mel_bins
   ])
-
   logits = models.create_model(
       reshaped_input, model_settings, model_architecture, is_training=False,
       runtime_settings=runtime_settings)

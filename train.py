@@ -121,9 +121,10 @@ def main(_):
         '--how_many_training_steps and --learning_rate must be equal length '
         'lists, but are %d and %d long instead' % (len(training_steps_list),
                                                    len(learning_rates_list)))
-
+  mel_bins = 80
+  input_size = model_settings['spectrogram_length'] * mel_bins
   fingerprint_input = tf.placeholder(
-      tf.float32, [None, fingerprint_size], name='fingerprint_input')
+      tf.float32, [None, input_size], name='fingerprint_input')
 
   logits, dropout_prob = models.create_model(
       fingerprint_input,
