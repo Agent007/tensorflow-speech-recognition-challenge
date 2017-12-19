@@ -176,7 +176,8 @@ def create_kaggle_model(fingerprint_input, model_settings, is_training):
     dropout_prob = tf.placeholder(tf.float32, name='dropout_prob')
   input_frequency_size = model_settings['dct_coefficient_count']
   input_time_size = model_settings['spectrogram_length']
-  input_shape = [input_time_size, input_frequency_size, 1]
+  mel_bins = 80
+  input_shape = [input_time_size, mel_bins, 1]
   fingerprint_4d = tf.reshape(fingerprint_input, [-1] + input_shape)
   conv_filters = 45
   x = Conv2D(filters=conv_filters, 
