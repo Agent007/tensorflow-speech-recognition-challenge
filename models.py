@@ -134,10 +134,11 @@ def create_kaggle_model(fingerprint_input, model_settings, is_training):
   x = Activation('relu')(x)
   # print(x.get_shape().as_list())
   x = Reshape((49, 320))(x)
-  x = Bidirectional(GRU(128, return_sequences=True, unroll=True))(x)
-  x = Bidirectional(GRU(128, return_sequences=True, unroll=True))(x)
+  rnn_size = 256
+  x = Bidirectional(GRU(rnn_size, return_sequences=True, unroll=True))(x)
+  x = Bidirectional(GRU(rnn_size, return_sequences=True, unroll=True))(x)
   
-  x = Dense(128, activation='relu')(x)
+  x = Dense(rnn_size, activation='relu')(x)
   
   x = Flatten()(x)
   
